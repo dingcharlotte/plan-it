@@ -70,12 +70,33 @@ def delete_time(user_id, time_id):
     Endpoint for deleting a user's (available) timeslot by id. 
     """
     time = Time.query.filter_by(user_id=user_id, id=time_id).first()
-    #user = User.query.filter_by(id=user_id).first()
     if time is None:
         return failure_response("Timeslot not found")
     db.session.delete(time)
     db.session.commit()
     return success_response(time.serialize())
+
+@app.route("/events/<int:user_id>/", methods=["POST"])
+def create_event(user_id): 
+    """
+    Endpoint for creating a new event. 
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found")
+    body = json.loads(request.data)
+    description = body.get("description")
+    users = body.get("users")
+    event = Event.query.filter_by(description=description).first()
+    if event is None: 
+        event = Event(
+            description = description)
+    user.joined_events.append(event)
+    for uid in users:
+        u = User.query.filter_by(id=uid).first()
+        u.joined_events.append(event)
+    db.session.commit()
+    return success_response(event.serialize(), 201)
 
 
 if __name__ == "__main__":
