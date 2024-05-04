@@ -21,18 +21,8 @@ def success_response(data, code=200):
 def failure_response(message, code=404):
     return json.dumps({"error": message}), code
 
-# routes here
+# routes
 @app.route("/")
-
-@app.route("/users/<int:user_id>/")
-def get_user(user_id):
-    """
-    Endpoint for getting a user by id. 
-    """
-    user = User.query.filter_by(id=user_id).first()
-    if user is None:
-        return failure_response("User not found")
-    return success_response(user.serialize())
 
 @app.route("/users/", methods=["POST"])
 def create_user():
@@ -46,6 +36,46 @@ def create_user():
     db.session.add(new_user)
     db.session.commit()
     return success_response(new_user.serialize(), 201)
+
+@app.route("/users/<int:user_id>/")
+def get_user(user_id):
+    """
+    Endpoint for getting a user by id. 
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found")
+    return success_response(user.serialize())
+
+@app.route("/users/<int:user_id>/times/", methods=["POST"])
+def create_time(user_id):
+    """
+    Endpoint for creating a new (available) timeslot for a user by id. 
+    """
+    user = User.query.filter_by(id=user_id).first()
+    if user is None:
+        return failure_response("User not found")
+    body = json.loads(request.data)
+    new_time = Time(
+        weekday = body.get("weekday"),
+        timeslot = body.get("timeslot"),
+        user_id = user_id)
+    db.session.add(new_time)
+    db.session.commit()
+    return success_response(new_time.serialize(), 201)
+
+@app.route("/users/<int:user_id>/times/<int:time_id>/", methods=["DELETE"])
+def delete_time(user_id, time_id): 
+    """
+    Endpoint for deleting a user's (available) timeslot by id. 
+    """
+    time = Time.query.filter_by(user_id=user_id, id=time_id).first()
+    #user = User.query.filter_by(id=user_id).first()
+    if time is None:
+        return failure_response("Timeslot not found")
+    db.session.delete(time)
+    db.session.commit()
+    return success_response(time.serialize())
 
 
 if __name__ == "__main__":
