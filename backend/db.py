@@ -9,11 +9,6 @@ association_table = db.Table(
     db.Column("user_id", db.Integer, db.ForeignKey("users.id")),
     db.Column("event_id", db.Integer, db.ForeignKey("events.id"))
 )
-# association_table = db.Table(
-#     "association",
-#     db.Column("user_id", db.Integer, db.ForeignKey("users.id")),
-#     db.Column("time_id", db.Integer, db.ForeignKey("times.id"))
-# )
 
 # model classes
 class User(db.Model):
@@ -27,9 +22,7 @@ class User(db.Model):
     name = db.Column(db.String, nullable=False)
     username = db.Column(db.String, nullable=False)
     available_times = db.relationship("Time", cascade="delete")
-    # available_times = db.relationship('Time', secondary='user_times', back_populates='users')
     joined_events = db.relationship("Event", secondary=association_table, back_populates='users')
-    # joined_events = db.relationship("Event", secondary='user_events', back_populates='users')
 
     def __init__(self, **kwargs): 
         """
@@ -46,9 +39,20 @@ class User(db.Model):
             "id": self.id,
             "name": self.name,
             "username": self.username,
-            "available_times": [time.serialize() for time in self.available_times],
+            "available_times": [time.simple_serialize() for time in self.available_times],
             "events_joined": [event.serialize() for event in self.joined_events]
-        } # last two might need to be simple serialized in the future
+        }
+    
+    def simple_serialize(self): 
+        """
+        Serialize User object without joined events. 
+        """
+        return {
+            "id": self.id,
+            "name": self.name,
+            "username": self.username,
+            "available_times": [time.simple_serialize() for time in self.available_times]
+        }
     
 class Time(db.Model):
     """
@@ -59,7 +63,6 @@ class Time(db.Model):
     weekday = db.Column(db.Integer, nullable=False)
     timeslot = db.Column(db.String, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    # users = db.relationship('User', secondary='user_times', back_populates='available_times')
 
     def __init__(self, **kwargs):
         """
@@ -80,15 +83,15 @@ class Time(db.Model):
             "user_id": self.user_id
         }
     
-    # def simple_serialize(self):
-    #     """
-    #     Serializes a Time object without users. 
-    #     """
-    #     return {
-    #         "id": self.id,
-    #         "weekday": self.weekday,
-    #         "timeslot": self.timeslot 
-    #     }
+    def simple_serialize(self): 
+        """
+        Serialize Time object without user id. 
+        """
+        return {
+            "id": self.id,
+            "weekday": self.weekday,
+            "timeslot": self.timeslot
+        }
 
 class Event(db.Model):
     """
@@ -111,5 +114,6 @@ class Event(db.Model):
         """
         return {
             "id": self.id,
-            "description": self.description
+            "description": self.description, 
+            "users": [user.simple_serialize() for user in self.users]
         }
