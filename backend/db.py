@@ -40,7 +40,7 @@ class User(db.Model):
             "name": self.name,
             "username": self.username,
             "available_times": [time.simple_serialize() for time in self.available_times],
-            "events_joined": [event.serialize() for event in self.joined_events]
+            "joined_events": [event.serialize() for event in self.joined_events]
         }
     
     def simple_serialize(self): 
